@@ -8,14 +8,19 @@ meets all requirements from the briefing agent specification.
 """
 
 import py_trees
-import json
-import requests
-import time
-import textwrap
+import os
 from typing import Any
 from datetime import datetime
 from abc import ABC, abstractmethod
+from openai import OpenAI
 
+
+# ============================================================================
+# OpenAI Configuration
+# ============================================================================
+
+# Initialize OpenAI client (API key from environment)
+client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 # ============================================================================
 # Sub-Agent Base Classes and Implementations
@@ -43,24 +48,72 @@ class WeatherAgent(SubAgent):
 
     def get_weather(self, location: str) -> dict:
         """
-        Mock weather API call - in production, integrate with real weather service
-        Returns weather data for the specified location
+        Get current weather data using OpenAI to simulate weather API
+        In production, this would be replaced with actual weather API calls
         """
-        # Mock weather data - replace with actual API call
-        mock_weather_data = {
-            "New York": {"temperature": 72, "condition": "Partly Cloudy"},
-            "London": {"temperature": 15, "condition": "Rainy"},
-            "Tokyo": {"temperature": 25, "condition": "Sunny"},
-            "San Francisco": {"temperature": 18, "condition": "Foggy"},
-            "Default": {"temperature": 20, "condition": "Clear"},
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a weather API that provides current weather data. Return realistic current weather information in JSON format with temperature (Celsius), condition, and any other relevant details. Be concise and realistic for the specified location and current season.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"Get current weather for {location}. Return only a JSON object with 'temperature' (number in Celsius), 'condition' (string), and 'humidity' (percentage).",
+                    },
+                ],
+                temperature=0.7,
+                max_tokens=150,
+            )
+
+            # Parse the JSON response
+            weather_text = response.choices[0].message.content.strip()
+
+            # Try to extract JSON from the response
+            try:
+                import json
+
+                # Find JSON in the response (it might have extra text)
+                start = weather_text.find("{")
+                end = weather_text.rfind("}") + 1
+                if start != -1 and end != 0:
+                    weather_json = json.loads(weather_text[start:end])
+
+                    return {
+                        "location": location,
+                        "temperature": weather_json.get("temperature", 20),
+                        "condition": weather_json.get("condition", "Clear"),
+                        "humidity": weather_json.get("humidity", 50),
+                        "timestamp": datetime.now().isoformat(),
+                    }
+            except (json.JSONDecodeError, KeyError):
+                # Fallback to parsing the text response
+                pass
+
+        except Exception as e:
+            print(f"[{self.name}] OpenAI API error: {e}, using fallback data")
+
+        # Fallback weather data if OpenAI fails
+        fallback_data = {
+            "New York": {
+                "temperature": 22,
+                "condition": "Partly Cloudy",
+                "humidity": 65,
+            },
+            "London": {"temperature": 15, "condition": "Rainy", "humidity": 80},
+            "Tokyo": {"temperature": 25, "condition": "Sunny", "humidity": 45},
+            "San Francisco": {"temperature": 18, "condition": "Foggy", "humidity": 75},
+            "Default": {"temperature": 20, "condition": "Clear", "humidity": 50},
         }
 
-        weather = mock_weather_data.get(location, mock_weather_data["Default"])
-
+        weather = fallback_data.get(location, fallback_data["Default"])
         return {
             "location": location,
             "temperature": weather["temperature"],
             "condition": weather["condition"],
+            "humidity": weather["humidity"],
             "timestamp": datetime.now().isoformat(),
         }
 
@@ -85,29 +138,86 @@ class NewsAgent(SubAgent):
 
     def get_top_headlines(self, topic: str, count: int = 3) -> dict:
         """
-        Mock news API call - in production, integrate with real news service
-        Returns top headlines for the specified topic
+        Get current news headlines using OpenAI to simulate news API
+        In production, this would be replaced with actual news API calls
         """
-        # Mock news headlines - replace with actual API call
-        mock_headlines = {
+        try:
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": f"You are a news API that provides current headlines. Generate {count} realistic, current news headlines for the topic '{topic}'. Headlines should be believable and reflect current events/trends. Return only a JSON array of headline strings, no other text.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f'Generate {count} current {topic} news headlines. Return as JSON array: ["headline1", "headline2", ...]',
+                    },
+                ],
+                temperature=0.8,
+                max_tokens=200,
+            )
+
+            # Parse the JSON response
+            headlines_text = response.choices[0].message.content.strip()
+
+            try:
+                import json
+
+                # Find JSON array in the response
+                start = headlines_text.find("[")
+                end = headlines_text.rfind("]") + 1
+                if start != -1 and end != 0:
+                    headlines_json = json.loads(headlines_text[start:end])
+
+                    # Ensure we have the right number of headlines
+                    headlines = (
+                        headlines_json[:count]
+                        if isinstance(headlines_json, list)
+                        else []
+                    )
+
+                    return {
+                        "topic": topic,
+                        "headlines": headlines,
+                        "count": len(headlines),
+                        "timestamp": datetime.now().isoformat(),
+                    }
+            except (json.JSONDecodeError, KeyError):
+                # Fallback to parsing text manually
+                pass
+
+        except Exception as e:
+            print(f"[{self.name}] OpenAI API error: {e}, using fallback data")
+
+        # Fallback news headlines if OpenAI fails
+        fallback_headlines = {
             "technology": [
                 "AI Breakthrough: New Language Model Achieves Human-Level Performance",
                 "Tech Giants Report Strong Q3 Earnings Despite Market Volatility",
                 "Quantum Computing Milestone Reached by Leading Research Team",
+                "Cybersecurity Concerns Rise as Attacks Become More Sophisticated",
+                "New Smartphone Technology Promises Longer Battery Life",
             ],
             "world": [
                 "Global Climate Summit Announces New Sustainability Initiatives",
                 "International Trade Agreements Show Positive Economic Impact",
                 "Space Agency Successfully Launches New Mars Exploration Mission",
+                "Diplomatic Relations Strengthen Between Allied Nations",
+                "Education Reform Shows Promising Results in Recent Studies",
             ],
             "business": [
                 "Stock Markets Reach New Heights Amid Economic Recovery",
                 "Renewable Energy Sector Sees Record Investment Growth",
                 "Cryptocurrency Market Shows Signs of Stabilization",
+                "Small Business Lending Programs See Increased Participation",
+                "Remote Work Trends Continue to Shape Corporate Policies",
             ],
         }
 
-        headlines = mock_headlines.get(topic.lower(), mock_headlines["world"])[:count]
+        headlines = fallback_headlines.get(topic.lower(), fallback_headlines["world"])[
+            :count
+        ]
 
         return {
             "topic": topic,
@@ -142,39 +252,83 @@ class SynthesizerAgent(SubAgent):
         self, weather_data: dict, news_data: dict, context: dict
     ) -> str:
         """
-        Synthesize collected data into a human-readable daily briefing
-        In production, this would use an LLM API call
+        Synthesize collected data into a human-readable daily briefing using OpenAI
         """
         location = weather_data.get("location", "Unknown")
         temperature = weather_data.get("temperature", "N/A")
         condition = weather_data.get("condition", "N/A")
+        humidity = weather_data.get("humidity", "N/A")
 
         topic = news_data.get("topic", "general")
         headlines = news_data.get("headlines", [])
 
-        # Generate briefing using template (replace with LLM call in production)
-        briefing = f"""
-🌅 Daily Briefing - {datetime.now().strftime("%B %d, %Y")}
+        try:
+            # Prepare data for OpenAI
+            weather_summary = f"Location: {location}, Temperature: {temperature}°C, Conditions: {condition}"
+            if humidity != "N/A":
+                weather_summary += f", Humidity: {humidity}%"
+
+            headlines_text = "\n".join([f"- {headline}" for headline in headlines])
+
+            response = client.chat.completions.create(
+                model="gpt-3.5-turbo",
+                messages=[
+                    {
+                        "role": "system",
+                        "content": "You are a professional news briefing assistant. Create a well-formatted, engaging daily briefing that combines weather and news information. Use emojis appropriately, maintain a professional yet friendly tone, and provide useful insights. Structure the briefing with clear sections.",
+                    },
+                    {
+                        "role": "user",
+                        "content": f"""Create a daily briefing for {datetime.now().strftime("%B %d, %Y")} with this information:
+
+WEATHER DATA:
+{weather_summary}
+
+NEWS HEADLINES ({topic.title()}):
+{headlines_text}
+
+Please create an engaging, well-formatted daily briefing that includes:
+1. A header with the date
+2. Weather section with relevant insights
+3. News section with the headlines
+4. A brief summary/conclusion
+5. Use appropriate emojis and formatting
+
+Keep it professional but engaging, around 200-300 words.""",
+                    },
+                ],
+                temperature=0.7,
+                max_tokens=500,
+            )
+
+            briefing = response.choices[0].message.content.strip()
+            return briefing
+
+        except Exception as e:
+            print(f"[{self.name}] OpenAI API error: {e}, using fallback template")
+
+            # Fallback to template-based briefing if OpenAI fails
+            briefing = f"""🌅 Daily Briefing - {datetime.now().strftime("%B %d, %Y")}
 
 📍 Weather Update for {location}:
 Temperature: {temperature}°C
 Conditions: {condition}
+{f"Humidity: {humidity}%" if humidity != "N/A" else ""}
 
 📰 Top {topic.title()} News Headlines:
 """
 
-        for i, headline in enumerate(headlines, 1):
-            briefing += f"{i}. {headline}\n"
+            for i, headline in enumerate(headlines, 1):
+                briefing += f"{i}. {headline}\n"
 
-        briefing += f"""
+            briefing += f"""
 📊 Briefing Summary:
-Today's weather in {location} shows {condition.lower()} conditions with a temperature of {temperature}°C.
+Today's weather in {location} shows {condition.lower() if condition != "N/A" else "current"} conditions with a temperature of {temperature}°C.
 In {topic} news, we're seeing {len(headlines)} significant developments that may impact your day.
 
 Stay informed and have a great day! 🌟
 """
-
-        return briefing.strip()
+            return briefing.strip()
 
     def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         """Execute data synthesis and briefing generation"""
@@ -198,7 +352,13 @@ Stay informed and have a great day! 🌟
 class SubAgentAction(py_trees.behaviour.Behaviour):
     """Behavior tree action node that executes a sub-agent"""
 
-    def __init__(self, name: str, sub_agent: SubAgent, context_key: str = None, shared_state: dict = None):
+    def __init__(
+        self,
+        name: str,
+        sub_agent: SubAgent,
+        context_key: str = None,
+        shared_state: dict = None,
+    ):
         super().__init__(name)
         self.sub_agent = sub_agent
         self.context_key = context_key
@@ -209,7 +369,7 @@ class SubAgentAction(py_trees.behaviour.Behaviour):
         try:
             # Get context from shared state
             context = self.shared_state.get("context", {}).copy()
-            
+
             # For the SynthesizerAgent, add collected data to context
             if self.sub_agent.name == "SynthesizerAgent":
                 context["weather_data"] = self.shared_state.get("weather_data", {})
@@ -272,7 +432,7 @@ class DailyBriefingAgent:
             "context": {},
             "weather_data": None,
             "news_data": None,
-            "briefing": None
+            "briefing": None,
         }
 
         # Create behavior tree structure
@@ -288,27 +448,29 @@ class DailyBriefingAgent:
             name="WeatherCollection",
             sub_agent=self.weather_agent,
             context_key="weather_data",
-            shared_state=self.shared_state
+            shared_state=self.shared_state,
         )
 
         news_action = SubAgentAction(
-            name="NewsCollection", 
-            sub_agent=self.news_agent, 
+            name="NewsCollection",
+            sub_agent=self.news_agent,
             context_key="news_data",
-            shared_state=self.shared_state
+            shared_state=self.shared_state,
         )
 
         data_gathering.add_children([weather_action, news_action])
 
         # Data readiness condition
-        data_ready_condition = BriefingCondition(name="DataReadyCheck", shared_state=self.shared_state)
+        data_ready_condition = BriefingCondition(
+            name="DataReadyCheck", shared_state=self.shared_state
+        )
 
         # Synthesis phase
         synthesis_action = SubAgentAction(
             name="BriefingSynthesis",
             sub_agent=self.synthesizer_agent,
             context_key="briefing",
-            shared_state=self.shared_state
+            shared_state=self.shared_state,
         )
 
         # Assemble the tree
@@ -333,7 +495,11 @@ class DailyBriefingAgent:
         print("=" * 50)
 
         # Set context in shared state
-        self.shared_state["context"] = {"location": location, "topic": topic, "news_count": 3}
+        self.shared_state["context"] = {
+            "location": location,
+            "topic": topic,
+            "news_count": 3,
+        }
 
         # Execute behavior tree
         print("🌳 Executing Agentic Behavior Tree...")
