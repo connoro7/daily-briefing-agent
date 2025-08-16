@@ -12,7 +12,7 @@ import json
 import requests
 import time
 import textwrap
-from typing import Dict, List, Any
+from typing import Any
 from datetime import datetime
 from abc import ABC, abstractmethod
 
@@ -30,7 +30,7 @@ class SubAgent(ABC):
         self.state = {}
 
     @abstractmethod
-    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         """Execute the sub-agent's specialized task"""
         pass
 
@@ -64,7 +64,7 @@ class WeatherAgent(SubAgent):
             "timestamp": datetime.now().isoformat(),
         }
 
-    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         """Execute weather data collection"""
         location = context.get("location", "San Francisco")
 
@@ -116,7 +116,7 @@ class NewsAgent(SubAgent):
             "timestamp": datetime.now().isoformat(),
         }
 
-    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         """Execute news data collection"""
         topic = context.get("topic", "technology")
         count = context.get("news_count", 3)
@@ -176,7 +176,7 @@ Stay informed and have a great day! 🌟
 
         return briefing.strip()
 
-    def execute(self, context: Dict[str, Any]) -> Dict[str, Any]:
+    def execute(self, context: dict[str, Any]) -> dict[str, Any]:
         """Execute data synthesis and briefing generation"""
         weather_data = context.get("weather_data", {})
         news_data = context.get("news_data", {})
@@ -198,24 +198,29 @@ Stay informed and have a great day! 🌟
 class SubAgentAction(py_trees.behaviour.Behaviour):
     """Behavior tree action node that executes a sub-agent"""
 
-    def __init__(self, name: str, sub_agent: SubAgent, context_key: str = None):
+    def __init__(self, name: str, sub_agent: SubAgent, context_key: str = None, shared_state: dict = None):
         super().__init__(name)
         self.sub_agent = sub_agent
         self.context_key = context_key
+        self.shared_state = shared_state
 
     def update(self):
         """Execute the sub-agent and update behavior tree state"""
         try:
-            # Get context from blackboard
-            blackboard = py_trees.blackboard.Client()
-            context = blackboard.get("context", {})
+            # Get context from shared state
+            context = self.shared_state.get("context", {}).copy()
+            
+            # For the SynthesizerAgent, add collected data to context
+            if self.sub_agent.name == "SynthesizerAgent":
+                context["weather_data"] = self.shared_state.get("weather_data", {})
+                context["news_data"] = self.shared_state.get("news_data", {})
 
             # Execute sub-agent
             result = self.sub_agent.execute(context)
 
-            # Store result in blackboard
+            # Store result in shared state
             if self.context_key and result.get("status") == "success":
-                blackboard.set(self.context_key, result["data"])
+                self.shared_state[self.context_key] = result["data"]
 
             return py_trees.common.Status.SUCCESS
 
@@ -227,15 +232,14 @@ class SubAgentAction(py_trees.behaviour.Behaviour):
 class BriefingCondition(py_trees.behaviour.Behaviour):
     """Condition node that checks if briefing data is ready"""
 
-    def __init__(self, name: str):
+    def __init__(self, name: str, shared_state: dict = None):
         super().__init__(name)
+        self.shared_state = shared_state
 
     def update(self):
         """Check if all required data is available for briefing generation"""
-        blackboard = py_trees.blackboard.Client()
-
-        weather_data = blackboard.get("weather_data")
-        news_data = blackboard.get("news_data")
+        weather_data = self.shared_state.get("weather_data")
+        news_data = self.shared_state.get("news_data")
 
         if weather_data and news_data:
             return py_trees.common.Status.SUCCESS
@@ -263,12 +267,13 @@ class DailyBriefingAgent:
     def _setup_behavior_tree(self):
         """Setup the agentic behavior tree structure"""
 
-        # Initialize blackboard
-        blackboard = py_trees.blackboard.Client()
-        blackboard.register_key(key="context", access=py_trees.common.Access.WRITE)
-        blackboard.register_key(key="weather_data", access=py_trees.common.Access.WRITE)
-        blackboard.register_key(key="news_data", access=py_trees.common.Access.WRITE)
-        blackboard.register_key(key="briefing", access=py_trees.common.Access.WRITE)
+        # Initialize shared state instead of blackboard for simplicity
+        self.shared_state = {
+            "context": {},
+            "weather_data": None,
+            "news_data": None,
+            "briefing": None
+        }
 
         # Create behavior tree structure
         root = py_trees.composites.Sequence(name="DailyBriefingSequence", memory=True)
@@ -283,22 +288,27 @@ class DailyBriefingAgent:
             name="WeatherCollection",
             sub_agent=self.weather_agent,
             context_key="weather_data",
+            shared_state=self.shared_state
         )
 
         news_action = SubAgentAction(
-            name="NewsCollection", sub_agent=self.news_agent, context_key="news_data"
+            name="NewsCollection", 
+            sub_agent=self.news_agent, 
+            context_key="news_data",
+            shared_state=self.shared_state
         )
 
         data_gathering.add_children([weather_action, news_action])
 
         # Data readiness condition
-        data_ready_condition = BriefingCondition(name="DataReadyCheck")
+        data_ready_condition = BriefingCondition(name="DataReadyCheck", shared_state=self.shared_state)
 
         # Synthesis phase
         synthesis_action = SubAgentAction(
             name="BriefingSynthesis",
             sub_agent=self.synthesizer_agent,
             context_key="briefing",
+            shared_state=self.shared_state
         )
 
         # Assemble the tree
@@ -322,18 +332,15 @@ class DailyBriefingAgent:
         print("🤖 Daily Briefing Agent Starting...")
         print("=" * 50)
 
-        # Set context in blackboard
-        blackboard = py_trees.blackboard.Client()
-        blackboard.set(
-            "context", {"location": location, "topic": topic, "news_count": 3}
-        )
+        # Set context in shared state
+        self.shared_state["context"] = {"location": location, "topic": topic, "news_count": 3}
 
         # Execute behavior tree
         print("🌳 Executing Agentic Behavior Tree...")
         self.behavior_tree.tick()
 
         # Get final briefing
-        briefing_data = blackboard.get("briefing")
+        briefing_data = self.shared_state.get("briefing")
         if briefing_data and "briefing" in briefing_data:
             briefing = briefing_data["briefing"]
             print("\n✅ Daily Briefing Generated Successfully!")
@@ -344,7 +351,7 @@ class DailyBriefingAgent:
             print(error_msg)
             return error_msg
 
-    def get_agent_states(self) -> Dict[str, Any]:
+    def get_agent_states(self) -> dict[str, Any]:
         """Get the current state of all sub-agents"""
         return {
             "weather_agent": self.weather_agent.state,
@@ -432,4 +439,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

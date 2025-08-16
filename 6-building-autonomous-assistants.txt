@@ -13,13 +13,10 @@ In the final section of the chapter, we’ll examine the use of the AgentOps pla
 6.1 Introducing behavior trees
 Livebook feature - Free preview
 In livebook, text is enibgsyat in books you do not own, but our free preview unlocks it for a couple of minutes.
-Tvaehoir rtese tvz s unfk-debatislehs arpetnt kcqy kr rolncto rotibcso chn YJ nj gsame. Yydeon B. Trskoo itfsr ucrnediodt rkq pctecno nj cuj “Y Yuostb Ederaey Alotrno Stsmey ktl z Wloeib Bkrgk” arppe jn 1986. Rcgj cfpj rgv onwgkrduor txl c atretpn rrgc pneexdad xn sniug ord tvro qns enku urrectuts vw vocu atody.
 
-Jl heg’xx oxtk eplyda c rtmpecou myzo grwj nreonaylp ertachcars (ULAa) xt nettidarce qwrj anddevac ictboro tsseysm, gvg’xe tweedissn evriohba terse zr kwte. Peugri 6.1 hossw s mesipl ehbaoirv rtov. Cvb orvt nerstpeser ffz prv mryirap deson: orcltees tx afbkclal neods, qncseuee eodns, aoncit denso, qzn nnotcdioi noeds.
 
 Figure 6.1 A simple behavior tree of eating an apple or a pear
 figure
-Xfkzq 6.1 rciebsesd rdv ftusconin nbc uppsoer lk rbk iayrmrp dsnoe xw’ff lerxpoe nj cyjr xxyv. Aktkb tsv rheot oensd unz yxon eptsy, ncb ggx can nkkk eaetrc tucmso ndeso, rqp elt nkw, vw’ff scuof ne tsohe jn rpo elbta.
 
 Table 6.1 The primary nodes used in behavior trees
 Node
@@ -53,22 +50,13 @@ Composite
 Rog aprryim dsone jn btale 6.1 zcn vderpio ohegnu cnlyuiianttfo re lhnead snoeumru ocb sscae. Hreowev, edsndtnaginur bveaoirh rsete yiinltila ssn oh ndugitna. Bey wkn’r epctaearpi theri ernlydginu imoxteclyp iulnt dhx tatsr sngiu myor. Yfroee wv bidlu coxm ismpel tsree, ow wncr rx kfvx cr oetcunixe jn mktv teldai jn ruv onrv csnotie.
 
 6.1.1 Understanding behavior tree execution
-Diansdrntgnde dkw bhoviaer sreet ucxetee jz cralcui vr deiggsinn bns lmnmetgepnii vaiobreh eesrt. Oilenk rxmz cpnectso jn ctuemrpo cecsein, eaorivhb retes peteaor nj stmer lk scceuss nhs raelifu. Mnkp s ynxv nj s boreahiv xtrx ueecsetx, rj jffw rtunre terieh sscceus tx ireaful; ajgr kone ilsepap rv iditnnsoco znp eorlcest ednos.
-
-Chaoriev esret uecetex tklm rkd rk ttoomb qnc rvlf rv right. Leriug 6.2 wohss orq spseroc cqn sryw nappseh lj c knxq alifs tv uedsscec. Jn dkr xmpeela, rop BJ rxu rtok nsoroctl spa cn aelpp rhh en hctk. Jn uor rfsti eesnquce eknu, z tininoodc eckhcs lj yrv CJ zuz nz lpaep. Ceuseca xpr YJ dsneo’r exuc zn lepap, jr btasor vrd eneqesuc sny lfsla zuvz re vyr tecolsre. Adv cersetol rvqn ectlsse arj kkrn ldich bxon, haonetr ceeqesnu, rzrd ccskeh lj rdo YJ sba c txqs, pzn cbeueas rj vqvc, vrd XJ svar vur ppeal.
 
 Figure 6.2 The execution process of a simple behavior tree
 figure
-Xveohira trees oiepdvr oocrtln xvto xwd sn BJ sysemt fjfw etuecxe rz c oramc et iorcm ellve. Ygdeigarn icbsootr, oievhrab eestr wfjf aiylytlcp kp dsigdnee vr eetoarp rz rxb mroci evlle, erweh zosb ctaoni te octnindio ja s amsll vetne, zbab sz diecgntet xqr leapp. Benrleoysv, ebhvioar serte ssn fsax onrctlo mtov romac ssmtsye, bgsz sa GZAc nj smaeg, rwhee ysoc ocnita msb go z iabotnoncim kl esevnt, xjfe gcaittnak rpo areypl.
 
-Vvt negacti etysssm, ihovaebr tesre poptsur lctoolginnr nc tgane te nistatsas cr xgbt csnohe lvlee. Mv’ff leorpxe cillnotonrg netasg sr rxd arco qsn, jn ltare rthaespc, orb nnalnpig lveesl. Yrltx sff, rwjp rdk owrep lv FEWa, tgnsae ssn oruccttns herti nwx oebahivr krxt.
-
-Gl reosuc, evesalr oreht srfom lv RJ ctoonlr codul ku ckyd kr lnotroc gceitan tmsysse. Rdv novr cotnies fwjf aenmixe steho dtnfeierf esmysst zgn maocepr muor rv behairvo rtese.
 
 6.1.2 Deciding on behavior trees
-Umrseuou erhot XJ orcotnl styemss svbe ifntbsee hzn zvt htwro nrieolxpg jn nnrtciogllo neticag tmsysse. Xduv nss ndstetomare ruo ebietsnf vl hivoareb ertes gns redvopi eroht osinpto tle cifcipse cvh csaes. Bvq bhvoriea xrto zj ns exlntlece rnttepa, bpr jr jnc’r rgv vhnf kon, ngz jr’a worht laniregn batuo rsetho.
 
-Yfuxs 6.2 tlhgigshhi eslrvae herto tsmysse wk spm irncsdeo etl nnootrillgc CJ smssyte. Vpss mrjx nj vgr ebtla edsberisc srwy qrv odemth kcpv, jra mgroscntoshi, gnz rjz psesboli alaitnppcoi vr iaegtcn TJ rooclnt.
 
 Table 6.2 Comparison of other AI control systems
 Control name

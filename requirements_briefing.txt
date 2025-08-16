@@ -1,5 +1,2 @@
 py-trees>=2.2.3
 requests>=2.28.0
-datetime
-typing
-abc
